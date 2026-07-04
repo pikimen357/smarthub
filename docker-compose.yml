@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    container_name: pbl-smarthub-api
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/code/data
+      - ./app/static/uploads:/code/app/static/uploads
+    restart: unless-stopped

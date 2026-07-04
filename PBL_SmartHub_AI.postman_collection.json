@@ -1,0 +1,564 @@
+{
+  "info": {
+    "name": "PBL SmartHub AI - Backend API",
+    "description": "Koleksi Postman untuk testing API PBL SmartHub AI (FastAPI). Jalankan request secara berurutan dari folder '1. Auth' hingga '8. AI Direct Test' untuk simulasi alur end-to-end Guru & Siswa.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "teacher_email", "value": "guru@test.com", "type": "string" },
+    { "key": "teacher_password", "value": "pass123", "type": "string" },
+    { "key": "student_email", "value": "budi@test.com", "type": "string" },
+    { "key": "student_password", "value": "pass123", "type": "string" },
+    { "key": "teacher_token", "value": "", "type": "string" },
+    { "key": "student_token", "value": "", "type": "string" },
+    { "key": "class_id", "value": "", "type": "string" },
+    { "key": "class_token", "value": "", "type": "string" },
+    { "key": "module_id", "value": "", "type": "string" },
+    { "key": "group_id", "value": "", "type": "string" },
+    { "key": "task_id", "value": "", "type": "string" },
+    { "key": "submission_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Register Teacher",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"teacher\",\n  \"name\": \"Bu Guru\",\n  \"email\": \"{{teacher_email}}\",\n  \"password\": \"{{teacher_password}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Register Student",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"student\",\n  \"name\": \"Budi\",\n  \"email\": \"{{student_email}}\",\n  \"password\": \"{{student_password}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "Login Teacher",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.access_token) { pm.collectionVariables.set('teacher_token', data.access_token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "{{teacher_email}}", "type": "text" },
+                { "key": "password", "value": "{{teacher_password}}", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "Login Student",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.access_token) { pm.collectionVariables.set('student_token', data.access_token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "{{student_email}}", "type": "text" },
+                { "key": "password", "value": "{{student_password}}", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Guru - Kelas & Modul",
+      "item": [
+        {
+          "name": "Create Class",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('class_id', data.id); }",
+                  "if (data.token) { pm.collectionVariables.set('class_token', data.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Kimia X-1\"\n}" },
+            "url": { "raw": "{{base_url}}/classes/", "host": ["{{base_url}}"], "path": ["classes", ""] }
+          }
+        },
+        {
+          "name": "List My Classes",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": { "raw": "{{base_url}}/classes/", "host": ["{{base_url}}"], "path": ["classes", ""] }
+          }
+        },
+        {
+          "name": "Get Class Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": { "raw": "{{base_url}}/classes/{{class_id}}", "host": ["{{base_url}}"], "path": ["classes", "{{class_id}}"] }
+          }
+        },
+        {
+          "name": "Update Problem Description",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"problem_description\": \"Sampah kantin menumpuk setiap hari, siswa kesulitan memilah jenis sampah\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/problem",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "problem"]
+            }
+          }
+        },
+        {
+          "name": "Upload Problem Image (+ AI Object Detection)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "file", "type": "file", "src": [] }]
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/problem-image",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "problem-image"]
+            }
+          }
+        },
+        {
+          "name": "Get Problem Image Analysis",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/problem-image/analysis",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "problem-image", "analysis"]
+            }
+          }
+        },
+        {
+          "name": "Create Module",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('module_id', data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Klasifikasi Sampah\",\n  \"content_text\": \"Materi tentang jenis sampah organik, anorganik, dan polimer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/modules/",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "modules", ""]
+            }
+          }
+        },
+        {
+          "name": "List Modules",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/modules/",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "modules", ""]
+            }
+          }
+        },
+        {
+          "name": "Update Module",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content_text\": \"Materi tentang jenis sampah organik, anorganik, polimer (revisi)\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/modules/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "modules", "{{module_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Module",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/modules/{{module_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "modules", "{{module_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Guru - Rubrik AI",
+      "item": [
+        {
+          "name": "Generate Rubric with AI",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/rubric/generate",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "rubric", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Get Rubric",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/rubric/",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "rubric", ""]
+            }
+          }
+        },
+        {
+          "name": "Update Rubric (Manual)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"criteria\": [\n    { \"criteria\": \"Pemahaman Masalah\", \"description\": \"Ketepatan merumuskan akar masalah\", \"max_score\": 25 },\n    { \"criteria\": \"Kualitas Laporan\", \"description\": \"Kejelasan kesimpulan\", \"max_score\": 25 },\n    { \"criteria\": \"Kerja Sama\", \"description\": \"Kolaborasi kelompok\", \"max_score\": 25 },\n    { \"criteria\": \"Kreativitas\", \"description\": \"Orisinalitas solusi\", \"max_score\": 25 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/rubric/",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "rubric", ""]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Guru - Dashboard & Groups",
+      "item": [
+        {
+          "name": "Class Dashboard (progres semua grup)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "List Groups in Class",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/groups",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "groups"]
+            }
+          }
+        },
+        {
+          "name": "Get Group Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": { "raw": "{{base_url}}/groups/{{group_id}}", "host": ["{{base_url}}"], "path": ["groups", "{{group_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Siswa - Join & Problem Viewer",
+      "item": [
+        {
+          "name": "Join Class with Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('group_id', data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{student_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"{{class_token}}\"\n}" },
+            "url": { "raw": "{{base_url}}/classes/join", "host": ["{{base_url}}"], "path": ["classes", "join"] }
+          }
+        },
+        {
+          "name": "View Problem (foto & deskripsi)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": { "raw": "{{base_url}}/classes/{{class_id}}", "host": ["{{base_url}}"], "path": ["classes", "{{class_id}}"] }
+          }
+        },
+        {
+          "name": "View Problem Image Analysis",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/problem-image/analysis",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "problem-image", "analysis"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Siswa - Diskusi AI (Socratic)",
+      "item": [
+        {
+          "name": "Get Discussion History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/groups/{{group_id}}/discussion/",
+              "host": ["{{base_url}}"],
+              "path": ["groups", "{{group_id}}", "discussion", ""]
+            }
+          }
+        },
+        {
+          "name": "Send Message to AI",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{student_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Menurut saya masalahnya karena siswa buang sampah sembarangan\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/groups/{{group_id}}/discussion/message",
+              "host": ["{{base_url}}"],
+              "path": ["groups", "{{group_id}}", "discussion", "message"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Siswa - Checklist & Laporan",
+      "item": [
+        {
+          "name": "Generate Checklist with AI",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/groups/{{group_id}}/checklist/generate",
+              "host": ["{{base_url}}"],
+              "path": ["groups", "{{group_id}}", "checklist", "generate"]
+            }
+          }
+        },
+        {
+          "name": "List Tasks (Checklist)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (Array.isArray(data) && data.length > 0) { pm.collectionVariables.set('task_id', data[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/groups/{{group_id}}/tasks",
+              "host": ["{{base_url}}"],
+              "path": ["groups", "{{group_id}}", "tasks"]
+            }
+          }
+        },
+        {
+          "name": "Toggle/Check Task Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{student_token}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"is_checked\": true\n}" },
+            "url": { "raw": "{{base_url}}/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "Submit Final Report",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "conclusion_text", "value": "Sampah berhasil dipilah dan diolah sesuai langkah kerja", "type": "text" },
+                { "key": "file", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/groups/{{group_id}}/submission",
+              "host": ["{{base_url}}"],
+              "path": ["groups", "{{group_id}}", "submission"]
+            }
+          }
+        },
+        {
+          "name": "Get Submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('submission_id', data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/groups/{{group_id}}/submission",
+              "host": ["{{base_url}}"],
+              "path": ["groups", "{{group_id}}", "submission"]
+            }
+          }
+        },
+        {
+          "name": "Grade Submission (Guru)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"grade_score\": 88,\n  \"feedback_text\": \"Kerja bagus, laporan jelas dan sesuai rubrik\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/submissions/{{submission_id}}/grade",
+              "host": ["{{base_url}}"],
+              "path": ["submissions", "{{submission_id}}", "grade"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] }
+          }
+        }
+      ]
+    }
+  ]
+}
