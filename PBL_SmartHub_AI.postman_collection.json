@@ -352,6 +352,47 @@
       ]
     },
     {
+      "name": "4b. Guru - User Management",
+      "item": [
+        {
+          "name": "List Teachers (Guru Only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/users/teachers",
+              "host": ["{{base_url}}"],
+              "path": ["users", "teachers"]
+            }
+          }
+        },
+        {
+          "name": "List Students (Guru Only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/users/students",
+              "host": ["{{base_url}}"],
+              "path": ["users", "students"]
+            }
+          }
+        },
+        {
+          "name": "List Teachers (Ditolak - Pakai Token Siswa)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/users/teachers",
+              "host": ["{{base_url}}"],
+              "path": ["users", "teachers"]
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "5. Siswa - Join & Problem Viewer",
       "item": [
         {

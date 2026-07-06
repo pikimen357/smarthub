@@ -10,6 +10,7 @@ class RegisterRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
+    phone: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -31,6 +32,7 @@ class UserOut(BaseModel):
     role: str
     name: str
     email: str
+    phone: Optional[str] = None
 
     class Config:
         from_attributes = True

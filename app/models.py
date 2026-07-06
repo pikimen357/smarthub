@@ -40,6 +40,7 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     classes = relationship("Class", back_populates="teacher")

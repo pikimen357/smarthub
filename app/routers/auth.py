@@ -14,6 +14,9 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
     if payload.role not in ("teacher", "student"):
         raise HTTPException(status_code=400, detail="role harus 'teacher' atau 'student'")
 
+    if payload.role == "teacher" and not payload.phone:
+        raise HTTPException(status_code=400, detail="Nomor telepon wajib diisi untuk guru")
+
     existing = db.query(models.User).filter(models.User.email == payload.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email sudah terdaftar")
@@ -23,6 +26,7 @@ def register(payload: schemas.RegisterRequest, db: Session = Depends(get_db)):
         name=payload.name,
         email=payload.email,
         password_hash=hash_password(payload.password),
+        phone=payload.phone,
     )
     db.add(user)
     db.commit()
