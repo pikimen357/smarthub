@@ -53,8 +53,8 @@ def send_message(
     student: models.User = Depends(require_student),
 ):
     group = _get_group_for_student(db, group_id, student.id)
-    klass = db.query(models.Class).filter(models.Class.id == group.class_id).first()
-    modules = db.query(models.Module).filter(models.Module.class_id == group.class_id).all()
+    project = db.query(models.Project).filter(models.Project.id == group.project_id).first()
+    modules = db.query(models.Module).filter(models.Module.project_id == group.project_id).all()
     modules_text = "\n".join(f"- {m.title}: {m.content_text or ''}" for m in modules)
 
     discussion = _get_or_create_discussion(db, group_id)
@@ -63,7 +63,7 @@ def send_message(
     history.append({"role": "student", "message": payload.message, "timestamp": datetime.utcnow().isoformat()})
 
     ai_reply = gemini_service.socratic_chat(
-        problem_description=klass.problem_description or "",
+        problem_description=project.description or "",
         modules_text=modules_text,
         chat_history=history,
         student_message=payload.message,

@@ -8,35 +8,36 @@ from app.dependencies import get_current_user, require_teacher
 router = APIRouter(tags=["Groups"])
 
 
-def _get_owned_class(db: Session, class_id: str, teacher_id: str) -> models.Class:
-    klass = (
-        db.query(models.Class)
-        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher_id)
+def _get_owned_project(db: Session, project_id: str, teacher_id: str) -> models.Project:
+    project = (
+        db.query(models.Project)
+        .join(models.Class)
+        .filter(models.Project.id == project_id, models.Class.teacher_id == teacher_id)
         .first()
     )
-    if not klass:
-        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
-    return klass
+    if not project:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan atau bukan milik Anda")
+    return project
 
 
-@router.get("/classes/{class_id}/groups", response_model=list[schemas.GroupOut])
+@router.get("/projects/{project_id}/groups", response_model=list[schemas.GroupOut])
 def list_groups(
-    class_id: str,
+    project_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    return db.query(models.Group).filter(models.Group.class_id == class_id).all()
+    return db.query(models.Group).filter(models.Group.project_id == project_id).all()
 
 
-@router.get("/classes/{class_id}/dashboard")
-def class_dashboard(
-    class_id: str,
+@router.get("/projects/{project_id}/dashboard")
+def project_dashboard(
+    project_id: str,
     db: Session = Depends(get_db),
     teacher: models.User = Depends(require_teacher),
 ):
-    """Progres semua grup dalam kelas (Belum Mulai, Diskusi AI, Praktik, Selesai)."""
-    _get_owned_class(db, class_id, teacher.id)
-    groups = db.query(models.Group).filter(models.Group.class_id == class_id).all()
+    """Progres semua grup dalam project (Belum Mulai, Diskusi AI, Praktik, Selesai)."""
+    _get_owned_project(db, project_id, teacher.id)
+    groups = db.query(models.Group).filter(models.Group.project_id == project_id).all()
 
     result = []
     for g in groups:
@@ -49,7 +50,7 @@ def class_dashboard(
                 "has_submission": g.submission is not None,
             }
         )
-    return {"class_id": class_id, "groups": result}
+    return {"project_id": project_id, "groups": result}
 
 
 @router.get("/groups/{group_id}", response_model=schemas.GroupOut)

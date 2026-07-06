@@ -9,15 +9,16 @@ from app.services import maps_service
 router = APIRouter(tags=["Quest Map"])
 
 
-def _get_owned_class(db: Session, class_id: str, teacher_id: str) -> models.Class:
-    klass = (
-        db.query(models.Class)
-        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher_id)
+def _get_owned_project(db: Session, project_id: str, teacher_id: str) -> models.Project:
+    project = (
+        db.query(models.Project)
+        .join(models.Class)
+        .filter(models.Project.id == project_id, models.Class.teacher_id == teacher_id)
         .first()
     )
-    if not klass:
-        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
-    return klass
+    if not project:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan atau bukan milik Anda")
+    return project
 
 
 def _to_out(quest: models.Quest) -> schemas.QuestOut:
@@ -26,14 +27,14 @@ def _to_out(quest: models.Quest) -> schemas.QuestOut:
     return out
 
 
-@router.post("/classes/{class_id}/quests", response_model=schemas.QuestOut)
+@router.post("/projects/{project_id}/quests", response_model=schemas.QuestOut)
 def create_quest(
-    class_id: str,
+    project_id: str,
     payload: schemas.QuestCreate,
     db: Session = Depends(get_db),
     teacher: models.User = Depends(require_teacher),
 ):
-    _get_owned_class(db, class_id, teacher.id)
+    _get_owned_project(db, project_id, teacher.id)
 
     if payload.latitude is not None and payload.longitude is not None:
         latitude, longitude = payload.latitude, payload.longitude
@@ -48,7 +49,7 @@ def create_quest(
         )
 
     quest = models.Quest(
-        class_id=class_id,
+        project_id=project_id,
         module_id=payload.module_id,
         title=payload.title,
         description=payload.description,
@@ -62,14 +63,14 @@ def create_quest(
     return _to_out(quest)
 
 
-@router.get("/classes/{class_id}/quests", response_model=list[schemas.QuestOut])
+@router.get("/projects/{project_id}/quests", response_model=list[schemas.QuestOut])
 def list_quests(
-    class_id: str,
+    project_id: str,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
     """Menampilkan semua pin/quest untuk ditampilkan di Quest Map (guru & siswa)."""
-    quests = db.query(models.Quest).filter(models.Quest.class_id == class_id).all()
+    quests = db.query(models.Quest).filter(models.Quest.project_id == project_id).all()
     return [_to_out(q) for q in quests]
 
 
@@ -95,7 +96,7 @@ def update_quest(
     quest = db.query(models.Quest).filter(models.Quest.id == quest_id).first()
     if not quest:
         raise HTTPException(status_code=404, detail="Quest tidak ditemukan")
-    _get_owned_class(db, quest.class_id, teacher.id)  # pastikan quest milik kelas guru ini
+    _get_owned_project(db, quest.project_id, teacher.id)  # pastikan quest milik project guru ini
 
     if payload.title is not None:
         quest.title = payload.title
@@ -127,7 +128,7 @@ def delete_quest(
     quest = db.query(models.Quest).filter(models.Quest.id == quest_id).first()
     if not quest:
         raise HTTPException(status_code=404, detail="Quest tidak ditemukan")
-    _get_owned_class(db, quest.class_id, teacher.id)
+    _get_owned_project(db, quest.project_id, teacher.id)
 
     db.delete(quest)
     db.commit()

@@ -29,7 +29,7 @@ def generate_checklist(
     student: models.User = Depends(require_student),
 ):
     group = _get_group_for_student(db, group_id, student.id)
-    klass = db.query(models.Class).filter(models.Class.id == group.class_id).first()
+    project = db.query(models.Project).filter(models.Project.id == group.project_id).first()
     discussion = db.query(models.Discussion).filter(models.Discussion.group_id == group_id).first()
 
     if not discussion or json.loads(discussion.chat_history_json) == []:
@@ -38,7 +38,7 @@ def generate_checklist(
         )
 
     chat_history = json.loads(discussion.chat_history_json)
-    result = gemini_service.generate_checklist(klass.problem_description or "", chat_history)
+    result = gemini_service.generate_checklist(project.description or "", chat_history)
 
     # Hapus checklist lama (kalau generate ulang) lalu buat yang baru
     db.query(models.Task).filter(models.Task.group_id == group_id).delete()

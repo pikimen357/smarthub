@@ -43,16 +43,10 @@ class ClassCreate(BaseModel):
     name: str
 
 
-class ClassProblemUpdate(BaseModel):
-    problem_description: str
-
-
 class ClassOut(BaseModel):
     id: str
     name: str
     token: str
-    problem_description: Optional[str]
-    problem_image_url: Optional[str]
     created_at: datetime
 
     class Config:
@@ -61,6 +55,31 @@ class ClassOut(BaseModel):
 
 class ClassJoinRequest(BaseModel):
     token: str
+
+
+# ---------- Project (Tugas/Studi Kasus) ----------
+class ProjectCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+
+
+class ProjectUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None  # "draft" | "published"
+
+
+class ProjectOut(BaseModel):
+    id: str
+    class_id: str
+    title: str
+    description: Optional[str]
+    problem_image_url: Optional[str]
+    status: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 # ---------- Module ----------
@@ -76,7 +95,7 @@ class ModuleUpdate(BaseModel):
 
 class ModuleOut(BaseModel):
     id: str
-    class_id: str
+    project_id: str
     title: str
     content_text: Optional[str]
 
@@ -97,7 +116,7 @@ class RubricUpdate(BaseModel):
 
 class RubricOut(BaseModel):
     id: str
-    class_id: str
+    project_id: str
     criteria: List[RubricCriteria]
 
     class Config:
@@ -112,7 +131,7 @@ class GroupCreate(BaseModel):
 
 class GroupOut(BaseModel):
     id: str
-    class_id: str
+    project_id: str
     name: str
     status: str
 
@@ -180,6 +199,7 @@ class ImageAnalysisResult(BaseModel):
     total_count: int
     marked_image_url: Optional[str] = None
 
+
 # ---------- Quest Map ----------
 class QuestCreate(BaseModel):
     title: str
@@ -202,7 +222,7 @@ class QuestUpdate(BaseModel):
 
 class QuestOut(BaseModel):
     id: str
-    class_id: str
+    project_id: str
     module_id: Optional[str]
     title: str
     description: Optional[str]

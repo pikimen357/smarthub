@@ -1,21 +1,14 @@
-import json
-import os
 import random
 import string
-import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app import models, schemas
 from app.dependencies import get_current_user, require_teacher, require_student
-from app.services import gemini_service
 
 router = APIRouter(prefix="/classes", tags=["Classes"])
-
-UPLOAD_DIR = "app/static/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def _generate_token() -> str:
@@ -61,106 +54,49 @@ def get_class(
     return klass
 
 
-@router.put("/{class_id}/problem", response_model=schemas.ClassOut)
-def update_problem(
-    class_id: str,
-    payload: schemas.ClassProblemUpdate,
-    db: Session = Depends(get_db),
-    teacher: models.User = Depends(require_teacher),
-):
-    klass = _get_owned_class(db, class_id, teacher.id)
-    klass.problem_description = payload.problem_description
-    db.commit()
-    db.refresh(klass)
-    return klass
-
-
-@router.post("/{class_id}/problem-image")
-def upload_problem_image(
-    class_id: str,
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    teacher: models.User = Depends(require_teacher),
-):
-    klass = _get_owned_class(db, class_id, teacher.id)
-
-    ext = os.path.splitext(file.filename)[1] or ".jpg"
-    filename = f"{uuid.uuid4()}{ext}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-
-    content = file.file.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
-
-    analysis = gemini_service.analyze_image(content, file.content_type or "image/jpeg")
-
-    klass.problem_image_url = f"/static/uploads/{filename}"
-    klass.problem_image_analysis_json = json.dumps(analysis)
-    db.commit()
-    db.refresh(klass)
-
-    return {
-        "problem_image_url": klass.problem_image_url,
-        "analysis": analysis,
-    }
-
-
-@router.get("/{class_id}/problem-image/analysis")
-def get_image_analysis(
-    class_id: str,
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
-):
-    klass = db.query(models.Class).filter(models.Class.id == class_id).first()
-    if not klass:
-        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
-    if not klass.problem_image_analysis_json:
-        raise HTTPException(status_code=404, detail="Belum ada analisis gambar untuk kelas ini")
-    return json.loads(klass.problem_image_analysis_json)
-
-
-@router.post("/join", response_model=schemas.GroupOut)
+@router.post("/join")
 def join_class(
     payload: schemas.ClassJoinRequest,
     db: Session = Depends(get_db),
     student: models.User = Depends(require_student),
 ):
-    """
-    Siswa join menggunakan token kelas. Untuk MVP: siswa otomatis dimasukkan
-    ke grup pribadi (1 grup = 1 siswa) jika belum tergabung di grup manapun
-    pada kelas ini. Guru bisa menggabungkan grup secara manual lewat endpoint groups.
-    """
+    """Siswa join Class besar (bukan project) menggunakan token kelas."""
     klass = db.query(models.Class).filter(models.Class.token == payload.token).first()
     if not klass:
         raise HTTPException(status_code=404, detail="Token kelas tidak valid")
 
-    existing_membership = (
-        db.query(models.GroupMember)
-        .join(models.Group)
-        .filter(models.Group.class_id == klass.id, models.GroupMember.student_id == student.id)
+    existing = (
+        db.query(models.ClassEnrollment)
+        .filter(models.ClassEnrollment.class_id == klass.id, models.ClassEnrollment.student_id == student.id)
         .first()
     )
-    if existing_membership:
-        return existing_membership.group
+    if existing:
+        return {"detail": "Anda sudah tergabung di kelas ini", "class_id": klass.id, "class_name": klass.name}
 
-    group = models.Group(class_id=klass.id, name=f"Grup {student.name}")
-    db.add(group)
-    db.commit()
-    db.refresh(group)
-
-    member = models.GroupMember(group_id=group.id, student_id=student.id)
-    db.add(member)
+    enrollment = models.ClassEnrollment(class_id=klass.id, student_id=student.id)
+    db.add(enrollment)
     db.commit()
 
-    return group
+    return {"detail": "Berhasil join kelas", "class_id": klass.id, "class_name": klass.name}
 
 
-def _get_owned_class(db: Session, class_id: str, teacher_id: str) -> models.Class:
+@router.get("/{class_id}/students")
+def list_class_students(
+    class_id: str,
+    db: Session = Depends(get_db),
+    teacher: models.User = Depends(require_teacher),
+):
+    """Untuk statistik 'Total Siswa' di dashboard guru."""
     klass = (
         db.query(models.Class)
-        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher_id)
+        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher.id)
         .first()
     )
     if not klass:
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
-    return klass
+
+    enrollments = db.query(models.ClassEnrollment).filter(models.ClassEnrollment.class_id == class_id).all()
+    return [
+        {"student_id": e.student.id, "name": e.student.name, "email": e.student.email, "joined_at": e.joined_at}
+        for e in enrollments
+    ]

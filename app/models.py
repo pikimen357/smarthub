@@ -19,6 +19,11 @@ class RoleEnum(str, enum.Enum):
     student = "student"
 
 
+class ProjectStatusEnum(str, enum.Enum):
+    draft = "draft"
+    published = "published"
+
+
 class GroupStatusEnum(str, enum.Enum):
     belum_mulai = "belum_mulai"
     diskusi_ai = "diskusi_ai"
@@ -47,57 +52,105 @@ class User(Base):
 
 
 class Class(Base):
+    """Kelas/mata pelajaran, misal 'Biologi XII-1'. Siswa join sekali pakai token kelas."""
     __tablename__ = "classes"
 
     id = Column(String, primary_key=True, default=gen_id)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
     token = Column(String, unique=True, index=True, nullable=False)
-    problem_description = Column(Text, nullable=True)
-    problem_image_url = Column(String, nullable=True)
-    problem_image_analysis_json = Column(Text, nullable=True)  # hasil deteksi objek AI
     created_at = Column(DateTime, default=datetime.utcnow)
 
     teacher = relationship("User", back_populates="classes")
-    modules = relationship("Module", back_populates="klass", cascade="all, delete-orphan")
-    rubric = relationship("Rubric", back_populates="klass", uselist=False, cascade="all, delete-orphan")
-    groups = relationship("Group", back_populates="klass", cascade="all, delete-orphan")
-    quests = relationship("Quest", back_populates="klass", cascade="all, delete-orphan")
+    projects = relationship("Project", back_populates="klass", cascade="all, delete-orphan")
+    enrollments = relationship("ClassEnrollment", back_populates="klass", cascade="all, delete-orphan")
+
+
+class ClassEnrollment(Base):
+    """Menandai siswa yang sudah join sebuah Class (belum tentu sudah mulai project tertentu)."""
+    __tablename__ = "class_enrollments"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    student_id = Column(String, ForeignKey("users.id"), nullable=False)
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    klass = relationship("Class", back_populates="enrollments")
+    student = relationship("User")
+
+
+class Project(Base):
+    """Tugas/Project = studi kasus PBL individual di dalam sebuah Class."""
+    __tablename__ = "projects"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)  # deskripsi masalah
+    problem_image_url = Column(String, nullable=True)
+    problem_image_analysis_json = Column(Text, nullable=True)  # hasil deteksi objek AI
+    status = Column(Enum(ProjectStatusEnum), default=ProjectStatusEnum.draft)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    klass = relationship("Class", back_populates="projects")
+    modules = relationship("Module", back_populates="project", cascade="all, delete-orphan")
+    rubric = relationship("Rubric", back_populates="project", uselist=False, cascade="all, delete-orphan")
+    quests = relationship("Quest", back_populates="project", cascade="all, delete-orphan")
+    groups = relationship("Group", back_populates="project", cascade="all, delete-orphan")
 
 
 class Module(Base):
     __tablename__ = "modules"
 
     id = Column(String, primary_key=True, default=gen_id)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False)
     title = Column(String, nullable=False)
     content_text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    klass = relationship("Class", back_populates="modules")
+    project = relationship("Project", back_populates="modules")
 
 
 class Rubric(Base):
     __tablename__ = "rubrics"
 
     id = Column(String, primary_key=True, default=gen_id)
-    class_id = Column(String, ForeignKey("classes.id"), unique=True, nullable=False)
+    project_id = Column(String, ForeignKey("projects.id"), unique=True, nullable=False)
     criteria_json = Column(Text, nullable=False)  # JSON string list of {criteria, description, max_score}
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    klass = relationship("Class", back_populates="rubric")
+    project = relationship("Project", back_populates="rubric")
+
+
+class Quest(Base):
+    """Titik lokasi studi kasus (Quest Map) milik sebuah Project."""
+    __tablename__ = "quests"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False)
+    module_id = Column(String, ForeignKey("modules.id"), nullable=True)
+    title = Column(String, nullable=False)  # "Judul Kasus"
+    description = Column(Text, nullable=True)  # "Detail Kasus"
+    image_url = Column(String, nullable=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    address = Column(String, nullable=True)  # hasil reverse-geocode / input guru
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    project = relationship("Project", back_populates="quests")
+    module = relationship("Module")
 
 
 class Group(Base):
     __tablename__ = "groups"
 
     id = Column(String, primary_key=True, default=gen_id)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    project_id = Column(String, ForeignKey("projects.id"), nullable=False)
     name = Column(String, nullable=False)
     status = Column(Enum(GroupStatusEnum), default=GroupStatusEnum.belum_mulai)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    klass = relationship("Class", back_populates="groups")
+    project = relationship("Project", back_populates="groups")
     members = relationship("GroupMember", back_populates="group", cascade="all, delete-orphan")
     discussion = relationship("Discussion", back_populates="group", uselist=False, cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="group", cascade="all, delete-orphan")
@@ -152,21 +205,3 @@ class Submission(Base):
     graded_at = Column(DateTime, nullable=True)
 
     group = relationship("Group", back_populates="submission")
-
-class Quest(Base):
-    __tablename__ = "quests"
-
-    id = Column(String, primary_key=True, default=gen_id)
-    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
-    module_id = Column(String, ForeignKey("modules.id"), nullable=True)
-    title = Column(String, nullable=False)              # "Judul Kasus"
-    description = Column(Text, nullable=True)            # "Detail Kasus"
-    image_url = Column(String, nullable=True)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
-    address = Column(String, nullable=True)               # hasil reverse-geocode / input guru
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    klass = relationship("Class", back_populates="quests")
-    module = relationship("Module")
-
