@@ -17,7 +17,8 @@
     { "key": "module_id", "value": "", "type": "string" },
     { "key": "group_id", "value": "", "type": "string" },
     { "key": "task_id", "value": "", "type": "string" },
-    { "key": "submission_id", "value": "", "type": "string" }
+    { "key": "submission_id", "value": "", "type": "string" },
+    { "key": "quest_id", "value": "", "type": "string" }
   ],
   "item": [
     {
@@ -261,6 +262,146 @@
               "raw": "{{base_url}}/classes/{{class_id}}/modules/{{module_id}}",
               "host": ["{{base_url}}"],
               "path": ["classes", "{{class_id}}", "modules", "{{module_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2b. Guru & Siswa - Quest Map",
+      "item": [
+        {
+          "name": "Create Quest (pakai koordinat)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json();",
+                  "if (data.id) { pm.collectionVariables.set('quest_id', data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sampah Kantin yang Tidak Dipilah\",\n  \"description\": \"Kasus penumpukan sampah kantin sekolah\",\n  \"module_id\": \"{{module_id}}\",\n  \"latitude\": -7.0051,\n  \"longitude\": 110.4381\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/quests",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "quests"]
+            }
+          }
+        },
+        {
+          "name": "Create Quest (pakai address / auto-geocode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Polusi Sungai Dekat Sekolah\",\n  \"description\": \"Kasus pencemaran sungai oleh limbah rumah tangga\",\n  \"address\": \"SMAN 1 Semarang, Jawa Tengah\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/quests",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "quests"]
+            }
+          }
+        },
+        {
+          "name": "List Quests in Class (Quest Map)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/quests",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "quests"]
+            }
+          }
+        },
+        {
+          "name": "List Quests in Class (Siswa)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{student_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/classes/{{class_id}}/quests",
+              "host": ["{{base_url}}"],
+              "path": ["classes", "{{class_id}}", "quests"]
+            }
+          }
+        },
+        {
+          "name": "Get Quest Detail",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/quests/{{quest_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["quests", "{{quest_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Quest (geser pin/koordinat)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"latitude\": -7.0060,\n  \"longitude\": 110.4390\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/quests/{{quest_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["quests", "{{quest_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Quest (ganti alamat)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{teacher_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"Simpang Lima, Semarang, Jawa Tengah\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/quests/{{quest_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["quests", "{{quest_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Quest",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{teacher_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/quests/{{quest_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["quests", "{{quest_id}}"]
             }
           }
         }

@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     GEMINI_TEXT_MODEL: str = "gemini-1.5-flash"
     GEMINI_VISION_MODEL: str = "gemini-1.5-flash"
 
+    GOOGLE_MAPS_API_KEY: str = ""
+
     DATABASE_URL: str = "sqlite:///./data/pbl_smarthub.db"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

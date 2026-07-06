@@ -62,6 +62,7 @@ class Class(Base):
     modules = relationship("Module", back_populates="klass", cascade="all, delete-orphan")
     rubric = relationship("Rubric", back_populates="klass", uselist=False, cascade="all, delete-orphan")
     groups = relationship("Group", back_populates="klass", cascade="all, delete-orphan")
+    quests = relationship("Quest", back_populates="klass", cascade="all, delete-orphan")
 
 
 class Module(Base):
@@ -151,3 +152,21 @@ class Submission(Base):
     graded_at = Column(DateTime, nullable=True)
 
     group = relationship("Group", back_populates="submission")
+
+class Quest(Base):
+    __tablename__ = "quests"
+
+    id = Column(String, primary_key=True, default=gen_id)
+    class_id = Column(String, ForeignKey("classes.id"), nullable=False)
+    module_id = Column(String, ForeignKey("modules.id"), nullable=True)
+    title = Column(String, nullable=False)              # "Judul Kasus"
+    description = Column(Text, nullable=True)            # "Detail Kasus"
+    image_url = Column(String, nullable=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    address = Column(String, nullable=True)               # hasil reverse-geocode / input guru
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    klass = relationship("Class", back_populates="quests")
+    module = relationship("Module")
+

@@ -179,3 +179,38 @@ class ImageAnalysisResult(BaseModel):
     objects: List[dict]
     total_count: int
     marked_image_url: Optional[str] = None
+
+# ---------- Quest Map ----------
+class QuestCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    module_id: Optional[str] = None
+    # Isi salah satu: latitude+longitude (pin manual di map), ATAU address (akan di-geocode otomatis)
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
+
+
+class QuestUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    module_id: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
+
+
+class QuestOut(BaseModel):
+    id: str
+    class_id: str
+    module_id: Optional[str]
+    title: str
+    description: Optional[str]
+    image_url: Optional[str]
+    latitude: float
+    longitude: float
+    address: Optional[str]
+    map_preview_url: Optional[str] = None  # URL Static Map (di-generate saat response)
+
+    class Config:
+        from_attributes = True
