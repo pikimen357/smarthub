@@ -52,15 +52,15 @@ class User(Base):
 
 
 class Class(Base):
-    """Kelas/mata pelajaran, misal 'Biologi XII-1'. Siswa join sekali pakai token kelas."""
     __tablename__ = "classes"
 
     id = Column(String, primary_key=True, default=gen_id)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
+    token = Column(String, unique=True, index=True, nullable=False)
     schedule = Column(DateTime, nullable=False)
     description = Column(Text, nullable=True)
-    token = Column(String, unique=True, index=True, nullable=False)
+    is_archived = Column(Boolean, default=False, nullable=False)   # <-- tambahan
     created_at = Column(DateTime, default=datetime.utcnow)
 
     teacher = relationship("User", back_populates="classes")

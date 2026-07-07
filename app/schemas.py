@@ -49,10 +49,11 @@ class ClassCreate(BaseModel):
 class ClassOut(BaseModel):
     id: str
     name: str
-    schedule: datetime
     token: str
+    schedule: datetime
+    description: Optional[str]
+    is_archived: bool          # <-- tambahan
     created_at: datetime
-    description: Optional[str] = None
 
     class Config:
         from_attributes = True

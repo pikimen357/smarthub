@@ -40,10 +40,14 @@ def create_class(
 
 @router.get("/", response_model=list[schemas.ClassOut])
 def list_my_classes(
+    include_archived: bool = False,
     db: Session = Depends(get_db),
     teacher: models.User = Depends(require_teacher),
 ):
-    return db.query(models.Class).filter(models.Class.teacher_id == teacher.id).all()
+    query = db.query(models.Class).filter(models.Class.teacher_id == teacher.id)
+    if not include_archived:
+        query = query.filter(models.Class.is_archived == False)
+    return query.all()
 
 
 @router.get("/{class_id}", response_model=schemas.ClassOut)
@@ -64,10 +68,11 @@ def join_class(
     db: Session = Depends(get_db),
     student: models.User = Depends(require_student),
 ):
-    """Siswa join Class besar (bukan project) menggunakan token kelas."""
     klass = db.query(models.Class).filter(models.Class.token == payload.token).first()
     if not klass:
         raise HTTPException(status_code=404, detail="Token kelas tidak valid")
+    if klass.is_archived:
+        raise HTTPException(status_code=400, detail="Kelas ini sudah diarsipkan dan tidak menerima siswa baru")
 
     existing = (
         db.query(models.ClassEnrollment)
@@ -133,11 +138,12 @@ def update_class(
 
 
 @router.delete("/{class_id}")
-def delete_class(
+def archive_class(
     class_id: str,
     db: Session = Depends(get_db),
     teacher: models.User = Depends(require_teacher),
 ):
+    """Soft delete: kelas diarsipkan, data tidak benar-benar dihapus dari database."""
     klass = (
         db.query(models.Class)
         .filter(models.Class.id == class_id, models.Class.teacher_id == teacher.id)
@@ -146,6 +152,27 @@ def delete_class(
     if not klass:
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
 
-    db.delete(klass)
+    klass.is_archived = True
     db.commit()
-    return {"detail": "Kelas berhasil dihapus"}
+    return {"detail": "Kelas berhasil diarsipkan (soft delete)"}
+
+
+@router.post("/{class_id}/restore", response_model=schemas.ClassOut)
+def restore_class(
+    class_id: str,
+    db: Session = Depends(get_db),
+    teacher: models.User = Depends(require_teacher),
+):
+    """Mengembalikan kelas yang sudah diarsipkan."""
+    klass = (
+        db.query(models.Class)
+        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher.id)
+        .first()
+    )
+    if not klass:
+        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
+
+    klass.is_archived = False
+    db.commit()
+    db.refresh(klass)
+    return klass
