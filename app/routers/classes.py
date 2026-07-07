@@ -27,7 +27,10 @@ def create_class(
     while db.query(models.Class).filter(models.Class.token == token).first():
         token = _generate_token()
 
-    new_class = models.Class(teacher_id=teacher.id, name=payload.name, token=token)
+    new_class = models.Class(teacher_id=teacher.id,
+                             name=payload.name,
+                             description=payload.description,
+                             token=token)
     db.add(new_class)
     db.commit()
     db.refresh(new_class)

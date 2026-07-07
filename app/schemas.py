@@ -24,6 +24,7 @@ class TokenResponse(BaseModel):
     role: str
     user_id: str
     name: str
+    email: str
 
 
 # ---------- User ----------
@@ -41,6 +42,7 @@ class UserOut(BaseModel):
 # ---------- Class ----------
 class ClassCreate(BaseModel):
     name: str
+    description: Optional[str] = None
 
 
 class ClassOut(BaseModel):
@@ -48,6 +50,7 @@ class ClassOut(BaseModel):
     name: str
     token: str
     created_at: datetime
+    description: Optional[str] = None
 
     class Config:
         from_attributes = True
