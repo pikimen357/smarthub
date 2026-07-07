@@ -43,11 +43,13 @@ class UserOut(BaseModel):
 class ClassCreate(BaseModel):
     name: str
     description: Optional[str] = None
+    schedule: datetime
 
 
 class ClassOut(BaseModel):
     id: str
     name: str
+    schedule: datetime
     token: str
     created_at: datetime
     description: Optional[str] = None
@@ -58,6 +60,12 @@ class ClassOut(BaseModel):
 
 class ClassJoinRequest(BaseModel):
     token: str
+
+class ClassUpdate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    schedule: Optional[datetime] = None
+
 
 
 # ---------- Project (Tugas/Studi Kasus) ----------

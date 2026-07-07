@@ -58,6 +58,7 @@ class Class(Base):
     id = Column(String, primary_key=True, default=gen_id)
     teacher_id = Column(String, ForeignKey("users.id"), nullable=False)
     name = Column(String, nullable=False)
+    schedule = Column(DateTime, nullable=False)
     description = Column(Text, nullable=True)
     token = Column(String, unique=True, index=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)

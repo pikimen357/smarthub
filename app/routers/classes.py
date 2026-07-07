@@ -29,6 +29,7 @@ def create_class(
 
     new_class = models.Class(teacher_id=teacher.id,
                              name=payload.name,
+                             schedule=payload.schedule,
                              description=payload.description,
                              token=token)
     db.add(new_class)
@@ -103,3 +104,48 @@ def list_class_students(
         {"student_id": e.student.id, "name": e.student.name, "email": e.student.email, "joined_at": e.joined_at}
         for e in enrollments
     ]
+
+@router.put("/{class_id}", response_model=schemas.ClassOut)
+def update_class(
+    class_id: str,
+    payload: schemas.ClassUpdate,
+    db: Session = Depends(get_db),
+    teacher: models.User = Depends(require_teacher),
+):
+    klass = (
+        db.query(models.Class)
+        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher.id)
+        .first()
+    )
+    if not klass:
+        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
+
+    if payload.name is not None:
+        klass.name = payload.name
+    if payload.schedule is not None:
+        klass.schedule = payload.schedule
+    if payload.description is not None:
+        klass.description = payload.description
+
+    db.commit()
+    db.refresh(klass)
+    return klass
+
+
+@router.delete("/{class_id}")
+def delete_class(
+    class_id: str,
+    db: Session = Depends(get_db),
+    teacher: models.User = Depends(require_teacher),
+):
+    klass = (
+        db.query(models.Class)
+        .filter(models.Class.id == class_id, models.Class.teacher_id == teacher.id)
+        .first()
+    )
+    if not klass:
+        raise HTTPException(status_code=404, detail="Kelas tidak ditemukan atau bukan milik Anda")
+
+    db.delete(klass)
+    db.commit()
+    return {"detail": "Kelas berhasil dihapus"}
