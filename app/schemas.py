@@ -63,7 +63,7 @@ class ClassJoinRequest(BaseModel):
     token: str
 
 class ClassUpdate(BaseModel):
-    name: str
+    name: Optional[str] = None
     description: Optional[str] = None
     schedule: Optional[datetime] = None
 
