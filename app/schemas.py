@@ -96,20 +96,23 @@ class ProjectOut(BaseModel):
 
 # ---------- Module ----------
 class ModuleCreate(BaseModel):
+    type: str  # "dokumen" | "youtube" | "artikel"
     title: str
-    content_text: Optional[str] = None
+    url: str
 
 
 class ModuleUpdate(BaseModel):
+    type: Optional[str] = None
     title: Optional[str] = None
-    content_text: Optional[str] = None
+    url: Optional[str] = None
 
 
 class ModuleOut(BaseModel):
     id: str
     project_id: str
+    type: str
     title: str
-    content_text: Optional[str]
+    url: str
 
     class Config:
         from_attributes = True

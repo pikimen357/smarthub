@@ -39,7 +39,7 @@ def generate_rubric(
 ):
     project = _get_owned_project(db, project_id, teacher.id)
     modules = db.query(models.Module).filter(models.Module.project_id == project_id).all()
-    modules_text = "\n".join(f"- {m.title}: {m.content_text or ''}" for m in modules)
+    modules_text = "\n".join(f"- {m.title} ({m.type}): {m.url}" for m in modules)
 
     criteria = gemini_service.generate_rubric(project.description or "", modules_text)
 

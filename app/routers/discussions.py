@@ -55,7 +55,7 @@ def send_message(
     group = _get_group_for_student(db, group_id, student.id)
     project = db.query(models.Project).filter(models.Project.id == group.project_id).first()
     modules = db.query(models.Module).filter(models.Module.project_id == group.project_id).all()
-    modules_text = "\n".join(f"- {m.title}: {m.content_text or ''}" for m in modules)
+    modules_text = "\n".join(f"- {m.title} ({m.type}): {m.url}" for m in modules)
 
     discussion = _get_or_create_discussion(db, group_id)
     history = json.loads(discussion.chat_history_json)

@@ -28,7 +28,16 @@ def create_module(
     teacher: models.User = Depends(require_teacher),
 ):
     _get_owned_project(db, project_id, teacher.id)
-    module = models.Module(project_id=project_id, title=payload.title, content_text=payload.content_text)
+
+    if payload.type not in ("dokumen", "youtube", "artikel"):
+        raise HTTPException(status_code=400, detail="type harus 'dokumen', 'youtube', atau 'artikel'")
+
+    module = models.Module(
+        project_id=project_id,
+        type=payload.type,
+        title=payload.title,
+        url=payload.url,
+    )
     db.add(module)
     db.commit()
     db.refresh(module)
@@ -78,10 +87,14 @@ def update_module(
     if not module:
         raise HTTPException(status_code=404, detail="Modul tidak ditemukan")
 
+    if payload.type is not None:
+        if payload.type not in ("dokumen", "youtube", "artikel"):
+            raise HTTPException(status_code=400, detail="type harus 'dokumen', 'youtube', atau 'artikel'")
+        module.type = payload.type
     if payload.title is not None:
         module.title = payload.title
-    if payload.content_text is not None:
-        module.content_text = payload.content_text
+    if payload.url is not None:
+        module.url = payload.url
 
     db.commit()
     db.refresh(module)

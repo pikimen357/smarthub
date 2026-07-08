@@ -101,13 +101,20 @@ class Project(Base):
     groups = relationship("Group", back_populates="project", cascade="all, delete-orphan")
 
 
+class ModuleTypeEnum(str, enum.Enum):
+    dokumen = "dokumen"
+    youtube = "youtube"
+    artikel = "artikel"
+
+
 class Module(Base):
     __tablename__ = "modules"
 
     id = Column(String, primary_key=True, default=gen_id)
     project_id = Column(String, ForeignKey("projects.id"), nullable=False)
+    type = Column(Enum(ModuleTypeEnum), nullable=False)
     title = Column(String, nullable=False)
-    content_text = Column(Text, nullable=True)
+    url = Column(String, nullable=False)   # link Dokumen/YouTube/Artikel
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="modules")
