@@ -1,4 +1,22 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: pbl-smarthub-db
+    environment:
+      POSTGRES_USER: pbluser
+      POSTGRES_PASSWORD: pblpassword
+      POSTGRES_DB: pbl_smarthub
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"   # opsional, kalau mau akses langsung dari luar container (misal pakai DBeaver)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pbluser -d pbl_smarthub"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   api:
     build: .
     container_name: pbl-smarthub-api
@@ -7,7 +25,12 @@ services:
     env_file:
       - .env
     volumes:
-      - ./app:/code/app              # <-- tambahan ini, WAJIB untuk auto-reload
-      - ./data:/code/data
+      - ./app:/code/app
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  pgdata:

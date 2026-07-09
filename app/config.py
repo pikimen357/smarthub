@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     GOOGLE_MAPS_API_KEY: str = ""
 
-    DATABASE_URL: str = "sqlite:///./data/pbl_smarthub.db"
+    DATABASE_URL: str = "postgresql+psycopg2://pbluser:pblpassword@db:5432/pbl_smarthub"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
