@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from app.database import Base, engine
 from app.routers import auth, classes, modules, rubrics, groups, discussions, tasks, submissions, users, quests, projects
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="PBL SmartHub AI - Backend API",
