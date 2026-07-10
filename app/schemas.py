@@ -89,11 +89,14 @@ class ProjectOut(BaseModel):
     title: str
     description: Optional[str]
     problem_image_url: Optional[str]
-    status: str
+    status: str            # sekarang bisa "draft" | "published" | "archived"
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+class ArchiveToggleRequest(BaseModel):
+    is_archived: bool
 
 
 # ---------- Module ----------

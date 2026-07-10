@@ -22,7 +22,7 @@ class RoleEnum(str, enum.Enum):
 class ProjectStatusEnum(str, enum.Enum):
     draft = "draft"
     published = "published"
-
+    archived = "archived"
 
 class GroupStatusEnum(str, enum.Enum):
     belum_mulai = "belum_mulai"
@@ -81,16 +81,21 @@ class ClassEnrollment(Base):
     student = relationship("User")
 
 
+class ProjectStatusEnum(str, enum.Enum):
+    draft = "draft"
+    published = "published"
+    archived = "archived"     # <-- tambahan
+
+
 class Project(Base):
-    """Tugas/Project = studi kasus PBL individual di dalam sebuah Class."""
     __tablename__ = "projects"
 
     id = Column(String, primary_key=True, default=gen_id)
     class_id = Column(String, ForeignKey("classes.id"), nullable=False)
     title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)  # deskripsi masalah
+    description = Column(Text, nullable=True)
     problem_image_url = Column(String, nullable=True)
-    problem_image_analysis_json = Column(Text, nullable=True)  # hasil deteksi objek AI
+    problem_image_analysis_json = Column(Text, nullable=True)
     status = Column(Enum(ProjectStatusEnum), default=ProjectStatusEnum.draft)
     created_at = Column(DateTime, default=datetime.utcnow)
 

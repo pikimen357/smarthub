@@ -53,7 +53,11 @@ def create_project(
     teacher: models.User = Depends(require_teacher),
 ):
     _get_owned_class(db, class_id, teacher.id)
-    project = models.Project(class_id=class_id, title=payload.title, description=payload.description)
+    project = models.Project(
+        class_id=class_id,
+        title=payload.title,
+        description=payload.description,
+    )
     db.add(project)
     db.commit()
     db.refresh(project)
@@ -63,14 +67,20 @@ def create_project(
 @router.get("/classes/{class_id}/projects", response_model=list[schemas.ProjectOut])
 def list_projects(
     class_id: str,
+    include_archived: bool = False,
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user),
 ):
-    """Guru lihat semua (draft+published); siswa hanya lihat yang published."""
+    """Guru lihat semua (draft+published, kecuali archived); siswa hanya lihat yang published."""
     query = db.query(models.Project).filter(models.Project.class_id == class_id)
+
     if current_user.role == models.RoleEnum.student:
         _require_enrolled(db, class_id, current_user.id)
         query = query.filter(models.Project.status == models.ProjectStatusEnum.published)
+    else:
+        if not include_archived:
+            query = query.filter(models.Project.status != models.ProjectStatusEnum.archived)
+
     return query.all()
 
 
@@ -100,8 +110,8 @@ def update_project(
     if payload.description is not None:
         project.description = payload.description
     if payload.status is not None:
-        if payload.status not in ("draft", "published"):
-            raise HTTPException(status_code=400, detail="status harus 'draft' atau 'published'")
+        if payload.status not in ("draft", "published", "archived"):
+            raise HTTPException(status_code=400, detail="status harus 'draft', 'published', atau 'archived'")
         project.status = payload.status
 
     db.commit()
