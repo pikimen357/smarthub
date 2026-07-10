@@ -69,6 +69,20 @@ def list_my_classes(
         query = query.filter(models.Class.is_archived == False)
     return [_to_class_out(db, k) for k in query.all()]
 
+@router.get("/my-enrolled", response_model=list[schemas.ClassOut])
+def list_enrolled_classes(
+    db: Session = Depends(get_db),
+    student: models.User = Depends(require_student),
+):
+    """Daftar kelas yang sudah di-join oleh SISWA yang sedang login."""
+    enrollments = (
+        db.query(models.ClassEnrollment)
+        .filter(models.ClassEnrollment.student_id == student.id)
+        .all()
+    )
+    class_ids = [e.class_id for e in enrollments]
+    classes = db.query(models.Class).filter(models.Class.id.in_(class_ids)).all()
+    return [_to_class_out(db, k) for k in classes]
 
 @router.get("/{class_id}", response_model=schemas.ClassOut)
 def get_class(
