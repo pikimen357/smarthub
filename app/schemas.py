@@ -52,7 +52,9 @@ class ClassOut(BaseModel):
     token: str
     schedule: datetime
     description: Optional[str]
-    is_archived: bool          # <-- tambahan
+    is_archived: bool
+    teacher_name: str          # <-- tambahan
+    student_count: int         # <-- tambahan
     created_at: datetime
 
     class Config:

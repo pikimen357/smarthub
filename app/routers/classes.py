@@ -16,6 +16,24 @@ def _generate_token() -> str:
     suffix = "".join(random.choices(string.digits + string.ascii_uppercase, k=4))
     return f"{prefix}-{suffix}"
 
+def _to_class_out(db: Session, klass: models.Class) -> schemas.ClassOut:
+    student_count = (
+        db.query(models.ClassEnrollment)
+        .filter(models.ClassEnrollment.class_id == klass.id)
+        .count()
+    )
+    return schemas.ClassOut(
+        id=klass.id,
+        name=klass.name,
+        token=klass.token,
+        schedule=klass.schedule,
+        description=klass.description,
+        is_archived=klass.is_archived,
+        teacher_name=klass.teacher.name,
+        student_count=student_count,
+        created_at=klass.created_at,
+    )
+
 
 @router.post("/", response_model=schemas.ClassOut)
 def create_class(
@@ -27,15 +45,17 @@ def create_class(
     while db.query(models.Class).filter(models.Class.token == token).first():
         token = _generate_token()
 
-    new_class = models.Class(teacher_id=teacher.id,
-                             name=payload.name,
-                             schedule=payload.schedule,
-                             description=payload.description,
-                             token=token)
+    new_class = models.Class(
+        teacher_id=teacher.id,
+        name=payload.name,
+        schedule=payload.schedule,
+        description=payload.description,
+        token=token,
+    )
     db.add(new_class)
     db.commit()
     db.refresh(new_class)
-    return new_class
+    return _to_class_out(db, new_class)
 
 
 @router.get("/", response_model=list[schemas.ClassOut])
@@ -47,7 +67,7 @@ def list_my_classes(
     query = db.query(models.Class).filter(models.Class.teacher_id == teacher.id)
     if not include_archived:
         query = query.filter(models.Class.is_archived == False)
-    return query.all()
+    return [_to_class_out(db, k) for k in query.all()]
 
 
 @router.get("/{class_id}", response_model=schemas.ClassOut)
@@ -59,7 +79,20 @@ def get_class(
     klass = db.query(models.Class).filter(models.Class.id == class_id).first()
     if not klass:
         raise HTTPException(status_code=404, detail="Kelas tidak ditemukan")
-    return klass
+
+    if current_user.role == models.RoleEnum.teacher:
+        if klass.teacher_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Anda bukan pemilik kelas ini")
+    else:
+        enrolled = (
+            db.query(models.ClassEnrollment)
+            .filter(models.ClassEnrollment.class_id == class_id, models.ClassEnrollment.student_id == current_user.id)
+            .first()
+        )
+        if not enrolled:
+            raise HTTPException(status_code=403, detail="Anda belum join kelas ini")
+
+    return _to_class_out(db, klass)
 
 
 @router.post("/join")
@@ -134,7 +167,7 @@ def update_class(
 
     db.commit()
     db.refresh(klass)
-    return klass
+    return _to_class_out(db, klass)
 
 
 @router.delete("/{class_id}")
@@ -175,4 +208,4 @@ def restore_class(
     klass.is_archived = False
     db.commit()
     db.refresh(klass)
-    return klass
+    return _to_class_out(db, klass)
