@@ -128,6 +128,12 @@ def upload_problem_image(
 ):
     project = _get_owned_project(db, project_id, teacher.id)
 
+    # Hapus file gambar lama (kalau ada) sebelum simpan yang baru
+    if project.problem_image_url:
+        old_filepath = project.problem_image_url.replace("/static/", "app/static/", 1)
+        if os.path.exists(old_filepath):
+            os.remove(old_filepath)
+
     ext = os.path.splitext(file.filename)[1] or ".jpg"
     filename = f"{uuid.uuid4()}{ext}"
     filepath = os.path.join(UPLOAD_DIR, filename)
@@ -153,7 +159,11 @@ def get_image_analysis(
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project or not project.problem_image_analysis_json:
         raise HTTPException(status_code=404, detail="Belum ada analisis gambar untuk project ini")
-    return json.loads(project.problem_image_analysis_json)
+
+    return {
+        "problem_image_url": project.problem_image_url,   # <-- tambahan ini
+        "analysis": json.loads(project.problem_image_analysis_json),
+    }
 
 
 @router.post("/projects/{project_id}/start", response_model=schemas.GroupOut)
