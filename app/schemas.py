@@ -75,12 +75,19 @@ class ClassUpdate(BaseModel):
 class ProjectCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    # Isi salah satu: latitude+longitude, ATAU address (akan di-geocode otomatis). Boleh dikosongkan semua.
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
 
 
 class ProjectUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
-    status: Optional[str] = None  # "draft" | "published"
+    status: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    address: Optional[str] = None
 
 
 class ProjectOut(BaseModel):
@@ -89,7 +96,11 @@ class ProjectOut(BaseModel):
     title: str
     description: Optional[str]
     problem_image_url: Optional[str]
-    status: str            # sekarang bisa "draft" | "published" | "archived"
+    status: str
+    latitude: Optional[float]
+    longitude: Optional[float]
+    address: Optional[str]
+    map_preview_url: Optional[str] = None  # URL Static Map, di-generate saat response
     created_at: datetime
 
     class Config:

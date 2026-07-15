@@ -88,6 +88,7 @@ class ProjectStatusEnum(str, enum.Enum):
 
 
 class Project(Base):
+    """Tugas/Project = studi kasus PBL individual di dalam sebuah Class, sekaligus 1 titik lokasi Quest Map."""
     __tablename__ = "projects"
 
     id = Column(String, primary_key=True, default=gen_id)
@@ -97,12 +98,17 @@ class Project(Base):
     problem_image_url = Column(String, nullable=True)
     problem_image_analysis_json = Column(Text, nullable=True)
     status = Column(Enum(ProjectStatusEnum), default=ProjectStatusEnum.draft)
+
+    # --- field hasil peleburan dari Quest ---
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    address = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
 
     klass = relationship("Class", back_populates="projects")
     modules = relationship("Module", back_populates="project", cascade="all, delete-orphan")
     rubric = relationship("Rubric", back_populates="project", uselist=False, cascade="all, delete-orphan")
-    quests = relationship("Quest", back_populates="project", cascade="all, delete-orphan")
     groups = relationship("Group", back_populates="project", cascade="all, delete-orphan")
 
 
@@ -134,25 +140,6 @@ class Rubric(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     project = relationship("Project", back_populates="rubric")
-
-
-class Quest(Base):
-    """Titik lokasi studi kasus (Quest Map) milik sebuah Project."""
-    __tablename__ = "quests"
-
-    id = Column(String, primary_key=True, default=gen_id)
-    project_id = Column(String, ForeignKey("projects.id"), nullable=False)
-    module_id = Column(String, ForeignKey("modules.id"), nullable=True)
-    title = Column(String, nullable=False)  # "Judul Kasus"
-    description = Column(Text, nullable=True)  # "Detail Kasus"
-    image_url = Column(String, nullable=True)
-    latitude = Column(Float, nullable=False)
-    longitude = Column(Float, nullable=False)
-    address = Column(String, nullable=True)  # hasil reverse-geocode / input guru
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    project = relationship("Project", back_populates="quests")
-    module = relationship("Module")
 
 
 class Group(Base):

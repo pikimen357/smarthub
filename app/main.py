@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
-from app.routers import auth, classes, modules, rubrics, groups, discussions, tasks, submissions, users, quests, projects
+from app.routers import auth, classes, modules, rubrics, groups, discussions, tasks, submissions, users, projects
 
 # Base.metadata.create_all(bind=engine)
 
@@ -35,7 +35,6 @@ app.include_router(discussions.router)
 app.include_router(tasks.router)
 app.include_router(submissions.router)
 app.include_router(users.router)
-app.include_router(quests.router)
 app.include_router(projects.router)
 
 

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
 from app.dependencies import get_current_user, require_teacher, require_student
-from app.services import gemini_service
+from app.services import gemini_service, maps_service
 
 router = APIRouter(tags=["Projects (Tugas)"])
 
@@ -45,6 +45,24 @@ def _require_enrolled(db: Session, class_id: str, student_id: str):
         raise HTTPException(status_code=403, detail="Anda belum join kelas ini")
 
 
+def _resolve_location(latitude, longitude, address):
+    """Terima kombinasi lat/lng ATAU address, kembalikan (latitude, longitude, address) final."""
+    if latitude is not None and longitude is not None:
+        resolved_address = address or maps_service.reverse_geocode(latitude, longitude)
+        return latitude, longitude, resolved_address
+    elif address:
+        geo = maps_service.geocode_address(address)
+        return geo["latitude"], geo["longitude"], geo["formatted_address"]
+    return None, None, None  # lokasi memang belum diisi, itu boleh
+
+
+def _to_out(project: models.Project) -> schemas.ProjectOut:
+    out = schemas.ProjectOut.model_validate(project)
+    if project.latitude is not None and project.longitude is not None:
+        out.map_preview_url = maps_service.static_map_url(project.latitude, project.longitude)
+    return out
+
+
 @router.post("/classes/{class_id}/projects", response_model=schemas.ProjectOut)
 def create_project(
     class_id: str,
@@ -53,15 +71,21 @@ def create_project(
     teacher: models.User = Depends(require_teacher),
 ):
     _get_owned_class(db, class_id, teacher.id)
+
+    latitude, longitude, address = _resolve_location(payload.latitude, payload.longitude, payload.address)
+
     project = models.Project(
         class_id=class_id,
         title=payload.title,
         description=payload.description,
+        latitude=latitude,
+        longitude=longitude,
+        address=address,
     )
     db.add(project)
     db.commit()
     db.refresh(project)
-    return project
+    return _to_out(project)
 
 
 @router.get("/classes/{class_id}/projects", response_model=list[schemas.ProjectOut])
@@ -81,7 +105,7 @@ def list_projects(
         if not include_archived:
             query = query.filter(models.Project.status != models.ProjectStatusEnum.archived)
 
-    return query.all()
+    return [_to_out(p) for p in query.all()]
 
 
 @router.get("/projects/{project_id}", response_model=schemas.ProjectOut)
@@ -93,7 +117,7 @@ def get_project(
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project tidak ditemukan")
-    return project
+    return _to_out(project)
 
 
 @router.put("/projects/{project_id}", response_model=schemas.ProjectOut)
@@ -114,9 +138,19 @@ def update_project(
             raise HTTPException(status_code=400, detail="status harus 'draft', 'published', atau 'archived'")
         project.status = payload.status
 
+    # Update lokasi hanya kalau salah satu field lokasi dikirim
+    if payload.address is not None and payload.latitude is None:
+        geo = maps_service.geocode_address(payload.address)
+        project.latitude, project.longitude, project.address = (
+            geo["latitude"], geo["longitude"], geo["formatted_address"],
+        )
+    elif payload.latitude is not None and payload.longitude is not None:
+        project.latitude, project.longitude = payload.latitude, payload.longitude
+        project.address = payload.address or maps_service.reverse_geocode(payload.latitude, payload.longitude)
+
     db.commit()
     db.refresh(project)
-    return project
+    return _to_out(project)
 
 
 @router.post("/projects/{project_id}/problem-image")
@@ -128,7 +162,6 @@ def upload_problem_image(
 ):
     project = _get_owned_project(db, project_id, teacher.id)
 
-    # Hapus file gambar lama (kalau ada) sebelum simpan yang baru
     if project.problem_image_url:
         old_filepath = project.problem_image_url.replace("/static/", "app/static/", 1)
         if os.path.exists(old_filepath):
@@ -161,7 +194,7 @@ def get_image_analysis(
         raise HTTPException(status_code=404, detail="Belum ada analisis gambar untuk project ini")
 
     return {
-        "problem_image_url": project.problem_image_url,   # <-- tambahan ini
+        "problem_image_url": project.problem_image_url,
         "analysis": json.loads(project.problem_image_analysis_json),
     }
 
@@ -172,7 +205,6 @@ def start_project(
     db: Session = Depends(get_db),
     student: models.User = Depends(require_student),
 ):
-    """Siswa 'mulai' sebuah project/tugas -> dibuatkan Group (kalau belum ada)."""
     project = db.query(models.Project).filter(models.Project.id == project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project tidak ditemukan")
