@@ -120,3 +120,15 @@ def delete_module(
     db.delete(module)
     db.commit()
     return {"detail": "Modul berhasil dihapus"}
+
+from app.services import gemini_service
+
+@router.post("/suggest", response_model=list[schemas.ModuleSuggestion])
+def suggest_modules(
+    project_id: str,
+    db: Session = Depends(get_db),
+    teacher: models.User = Depends(require_teacher),
+):
+    project = _get_owned_project(db, project_id, teacher.id)
+    suggestions = gemini_service.suggest_modules(project.description or "")
+    return suggestions

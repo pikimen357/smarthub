@@ -63,7 +63,10 @@ def analyze_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> Dict[str
         '{"objects": [{"label": "sampah plastik", "count": 3, '
         '"bounding_boxes": [{"x": 10, "y": 20, "width": 50, "height": 60}]}], '
         '"total_count": 3}\n'
-        "Koordinat bounding box dalam persen (0-100) relatif terhadap ukuran gambar. "
+        "PENTING: x, y, width, height WAJIB berupa angka desimal antara 0 dan 100 "
+        "(persentase relatif terhadap lebar/tinggi gambar), BUKAN pixel asli. "
+        "Contoh: jika objek berada tepat di tengah gambar dengan ukuran setengah dari gambar, "
+        "maka x=25, y=25, width=50, height=50. "
         "Jangan beri teks lain selain JSON."
     )
 
@@ -209,3 +212,33 @@ def generate_checklist(
             "Dokumentasikan proses dan hasil untuk laporan akhir",
         ],
     }
+
+# ---------------------------------------------------------------------------
+# 5. Module Topic Suggester (bukan generate URL, cuma rekomendasi topik)
+# ---------------------------------------------------------------------------
+def suggest_modules(problem_description: str) -> List[Dict[str, Any]]:
+    prompt = (
+        "Kamu adalah asisten guru SMA untuk pembelajaran PBL/PjBL. "
+        f"Deskripsi masalah/studi kasus: {problem_description}\n\n"
+        "Sarankan 4-6 topik materi pendukung yang relevan untuk membantu siswa memahami "
+        "masalah ini. Kembalikan HANYA JSON (list), setiap item punya:\n"
+        '{"title": "judul topik materi", "type": "dokumen" | "youtube" | "artikel", '
+        '"reason": "alasan singkat kenapa topik ini relevan (1 kalimat)"}\n'
+        "Field 'type' adalah SARAN jenis sumber yang paling cocok untuk topik itu, "
+        "bukan link asli — guru akan mencari dan mengisi link sungguhan sendiri. "
+        "Jangan mengarang URL apapun."
+    )
+
+    if _gemini_ready:
+        try:
+            text = _call_gemini_text(prompt)
+            return _extract_json(text)
+        except Exception:
+            pass
+
+    return [
+        {"title": "Klasifikasi Sampah Organik dan Anorganik", "type": "artikel", "reason": "Dasar pemahaman kategori sampah sebelum memilah"},
+        {"title": "Proses Daur Ulang Plastik", "type": "youtube", "reason": "Visualisasi proses daur ulang membantu siswa memahami tahapan teknis"},
+        {"title": "Dampak Sampah terhadap Ekosistem", "type": "dokumen", "reason": "Memberi konteks urgensi masalah lingkungan"},
+        {"title": "Prinsip 3R (Reduce, Reuse, Recycle)", "type": "artikel", "reason": "Kerangka solusi yang bisa diterapkan siswa"},
+    ]

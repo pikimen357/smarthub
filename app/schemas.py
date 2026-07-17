@@ -133,6 +133,10 @@ class ModuleOut(BaseModel):
     class Config:
         from_attributes = True
 
+class ModuleSuggestion(BaseModel):
+    title: str
+    type: str
+    reason: str
 
 # ---------- Rubric ----------
 class RubricCriteria(BaseModel):
