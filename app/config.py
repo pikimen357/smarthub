@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     GEMINI_TEXT_MODEL: str = "gemini-1.5-flash"
     GEMINI_VISION_MODEL: str = "gemini-1.5-flash"
 
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_IMAGE_MODEL: str = "google/gemini-2.5-flash-image"
+    IMAGE_GEN_LIMIT_PER_GROUP: int = 5
+
     GOOGLE_MAPS_API_KEY: str = ""
 
     DATABASE_URL: str = "postgresql+psycopg2://pbluser:pblpassword@db:5432/pbl_smarthub"

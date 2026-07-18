@@ -8,6 +8,9 @@ from app import models, schemas
 from app.dependencies import require_student, get_current_user
 from app.services import gemini_service
 
+from app.services import openrouter_service
+from app.config import settings
+
 router = APIRouter(tags=["Tasks (Checklist)"])
 
 
@@ -96,3 +99,43 @@ def toggle_task(
     db.commit()
     db.refresh(task)
     return task
+
+@router.post("/tasks/{task_id}/generate-image")
+def generate_task_image(
+    task_id: str,
+    db: Session = Depends(get_db),
+    student: models.User = Depends(require_student),
+):
+    task = db.query(models.Task).filter(models.Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task tidak ditemukan")
+
+    _get_group_for_student(db, task.group_id, student.id)
+
+    # Cek limit: berapa kali sudah generate gambar untuk grup ini
+    usage_count = (
+        db.query(models.ImageGenerationLog)
+        .filter(models.ImageGenerationLog.group_id == task.group_id)
+        .count()
+    )
+    if usage_count >= settings.IMAGE_GEN_LIMIT_PER_GROUP:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Batas generate gambar untuk grup ini sudah tercapai ({settings.IMAGE_GEN_LIMIT_PER_GROUP}x). "
+                   f"Fitur ini dibatasi karena masih tahap uji coba.",
+        )
+
+    result = openrouter_service.generate_step_image(task.item_desc)
+
+    # Catat pemakaian HANYA kalau benar-benar berhasil generate (bukan mock)
+    if result["mode"] == "openrouter":
+        log = models.ImageGenerationLog(group_id=task.group_id, task_id=task_id)
+        db.add(log)
+        db.commit()
+
+    return {
+        "task_id": task_id,
+        "image_base64": result["image_base64"],
+        "mode": result["mode"],
+        "remaining_quota": settings.IMAGE_GEN_LIMIT_PER_GROUP - usage_count - (1 if result["mode"] == "openrouter" else 0),
+    }
