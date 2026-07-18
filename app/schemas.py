@@ -230,9 +230,7 @@ class GradeRequest(BaseModel):
 
 # ---------- AI ----------
 class ImageAnalysisResult(BaseModel):
-    objects: List[dict]
-    total_count: int
-    marked_image_url: Optional[str] = None
+    findings: List[str]
 
 
 # ---------- Quest Map ----------

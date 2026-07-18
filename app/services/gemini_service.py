@@ -52,54 +52,90 @@ def _extract_json(text: str) -> Any:
     return json.loads(cleaned.strip())
 
 
-# ---------------------------------------------------------------------------
-# 1. Image Analysis & Object Detection
-# ---------------------------------------------------------------------------
+def _parse_findings(text: str) -> List[str]:
+    """Ubah output poin '- ...' dari Gemini menjadi list string bersih."""
+    findings = []
+    for line in text.strip().splitlines():
+        line = line.strip()
+        if line.startswith("- "):
+            findings.append(line[2:].strip())
+        elif line.startswith("-"):
+            findings.append(line[1:].strip())
+    return findings
+
+
 def analyze_image(image_bytes: bytes, mime_type: str = "image/jpeg") -> Dict[str, Any]:
     prompt = (
-        "Kamu adalah AI vision untuk mendeteksi objek pada studi kasus siswa SMA "
-        "(misal: sampah organik, anorganik, polimer, atau objek lain sesuai konteks foto). "
-        "Analisis gambar ini dan kembalikan HANYA JSON valid dengan format:\n"
-        '{"objects": [{"label": "sampah plastik", "count": 3, '
-        '"bounding_boxes": [{"x": 10, "y": 20, "width": 50, "height": 60}]}], '
-        '"total_count": 3}\n'
-        "PENTING: x, y, width, height WAJIB berupa angka desimal antara 0 dan 100 "
-        "(persentase relatif terhadap lebar/tinggi gambar), BUKAN pixel asli. "
-        "Contoh: jika objek berada tepat di tengah gambar dengan ukuran setengah dari gambar, "
-        "maka x=25, y=25, width=50, height=50. "
-        "Jangan beri teks lain selain JSON."
+        "Kamu adalah AI vision untuk membantu siswa SMA mengidentifikasi masalah nyata\n"
+        "dari sebuah foto dalam pembelajaran Problem-Based Learning atau\n"
+        "Project-Based Learning.\n"
+        "Analisis gambar dan jelaskan hanya masalah yang benar-benar terlihat.\n"
+        "Gambar dapat memuat berbagai jenis masalah, misalnya:\n"
+        "- sampah organik, plastik, logam, kertas, atau limbah campuran;\n"
+        "- jamur, lumut, noda biologis, atau kontaminasi;\n"
+        "- genangan air, kebocoran, rembesan, atau kelembapan;\n"
+        "- retakan, korosi, dan kerusakan bangunan;\n"
+        "- kabel terbuka, stopkontak rusak, api, atau bahaya listrik;\n"
+        "- tanaman layu, hama, atau penyakit tanaman;\n"
+        "- saluran tersumbat, toilet kotor, debu, dan masalah kebersihan;\n"
+        "- asap, pembakaran, pencemaran air, atau pencemaran udara;\n"
+        "- objek dan kondisi bermasalah lainnya.\n"
+        "ATURAN ANALISIS\n"
+        "1. Jelaskan hanya masalah yang didukung oleh bukti visual pada gambar.\n"
+        "2. Jangan mengarang objek atau kondisi yang tidak terlihat.\n"
+        "3. Prioritaskan masalah utama, kemudian masalah pendukung jika ada.\n"
+        "4. Jelaskan ciri visual yang membuat kondisi tersebut dianggap bermasalah.\n"
+        "5. Jangan langsung memberikan solusi atau langkah penanganan.\n"
+        "6. Jangan membuat diagnosis yang pasti hanya berdasarkan foto.\n"
+        "7. Bedakan pengamatan visual dengan kemungkinan penyebab.\n"
+        "8. Jika penyebab belum dapat dipastikan, gunakan kata:\n"
+        '   "kemungkinan", "diduga", atau "dapat berkaitan dengan".\n'
+        "9. Jika tidak terlihat masalah yang jelas, katakan bahwa masalah belum dapat\n"
+        "   diidentifikasi dari gambar.\n"
+        "10. Jangan menjelaskan benda normal yang tidak berkaitan dengan masalah.\n"
+        "ATURAN KHUSUS JAMUR DAN PERTUMBUHAN BIOLOGIS\n"
+        "Jika terlihat jamur, kapang, lumut, atau pertumbuhan biologis:\n"
+        "- Jelaskan warna, pola, lokasi, dan luas pertumbuhan yang terlihat.\n"
+        "- Gunakan identifikasi umum seperti:\n"
+        '  "pertumbuhan jamur pada dinding",\n'
+        '  "kapang berpigmen gelap",\n'
+        '  atau "lapisan hijau menyerupai lumut".\n'
+        "- Kamu boleh menyebut kandidat visual seperti:\n"
+        '  "menyerupai Cladosporium",\n'
+        '  "menyerupai Alternaria",\n'
+        '  atau "menyerupai kelompok Aspergillus/Penicillium".\n'
+        "- Jangan menyatakan jenis atau spesies jamur sebagai hasil yang pasti.\n"
+        "- Jelaskan bahwa jenis pastinya tidak dapat dipastikan hanya melalui foto.\n"
+        "- Warna hitam tidak otomatis berarti jamur beracun.\n"
+        "FORMAT OUTPUT\n"
+        "- Tulis dalam Bahasa Indonesia.\n"
+        "- Gunakan 2-6 poin.\n"
+        '- Setiap poin harus diawali dengan tanda "- ".\n'
+        "- Setiap poin berisi satu temuan masalah yang jelas.\n"
+        "- Urutkan dari masalah paling utama.\n"
+        "- Jangan gunakan judul.\n"
+        "- Jangan gunakan JSON.\n"
+        "- Jangan gunakan markdown selain tanda poin.\n"
+        "- Jangan gunakan code block.\n"
+        "- Jangan menambahkan kalimat pembuka atau penutup."
     )
 
     if _gemini_ready:
         try:
             text = _call_gemini_vision(prompt, image_bytes, mime_type)
-            return _extract_json(text)
+            findings = _parse_findings(text)
+            if findings:
+                return {"findings": findings}
         except Exception:
             pass  # fallback ke mock di bawah
 
     # ---- MOCK fallback ----
     return {
-        "objects": [
-            {
-                "label": "sampah anorganik (plastik)",
-                "count": 4,
-                "bounding_boxes": [
-                    {"x": 12, "y": 15, "width": 20, "height": 18},
-                    {"x": 40, "y": 30, "width": 15, "height": 14},
-                    {"x": 60, "y": 50, "width": 18, "height": 16},
-                    {"x": 20, "y": 60, "width": 12, "height": 12},
-                ],
-            },
-            {
-                "label": "sampah organik",
-                "count": 2,
-                "bounding_boxes": [
-                    {"x": 70, "y": 20, "width": 14, "height": 12},
-                    {"x": 80, "y": 65, "width": 10, "height": 10},
-                ],
-            },
+        "findings": [
+            "Terlihat tumpukan sampah campuran (organik dan anorganik) di area yang difoto.",
+            "Sebagian sampah tampak plastik dan kertas yang belum terpilah berdasarkan jenisnya.",
+            "Kondisi ini kemungkinan berkaitan dengan belum adanya sistem pemilahan sampah di lokasi tersebut, tetapi penyebab pastinya belum dapat dipastikan hanya melalui foto.",
         ],
-        "total_count": 6,
         "_mode": "mock",
     }
 
