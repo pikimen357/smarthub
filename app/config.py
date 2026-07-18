@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
     GEMINI_API_KEY: str = ""
-    GEMINI_TEXT_MODEL: str = "gemini-1.5-flash"
-    GEMINI_VISION_MODEL: str = "gemini-1.5-flash"
+    GEMINI_TEXT_MODEL: str = ""
+    GEMINI_VISION_MODEL: str = ""
 
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_IMAGE_MODEL: str = "google/gemini-2.5-flash-image"

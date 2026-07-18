@@ -20,6 +20,8 @@ def generate_step_image(step_description: str) -> dict:
     Generate 1 gambar ilustrasi untuk sebuah langkah kerja.
     Return: {"image_base64": str | None, "mode": "openrouter" | "mock"}
     """
+    print("DEBUG _openrouter_ready:", _openrouter_ready)
+    print("DEBUG API KEY (partial):", settings.OPENROUTER_API_KEY[:8] if settings.OPENROUTER_API_KEY else "EMPTY")
     prompt = (
         f"Ilustrasi sederhana, gaya diagram edukasi untuk siswa SMA, "
         f"menggambarkan langkah kerja berikut: {step_description}. "
