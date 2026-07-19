@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+import mimetypes
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -153,6 +154,7 @@ def update_project(
     return _to_out(project)
 
 
+
 @router.post("/projects/{project_id}/problem-image")
 def upload_problem_image(
     project_id: str,
@@ -174,7 +176,12 @@ def upload_problem_image(
     with open(filepath, "wb") as f:
         f.write(content)
 
-    analysis = gemini_service.analyze_image(content, file.content_type or "image/jpeg")
+    # Deteksi MIME type dari ekstensi file, JANGAN percaya file.content_type dari client
+    # (Windows kadang kirim "application/octet-stream" yang ditolak Gemini)
+    guessed_type, _ = mimetypes.guess_type(file.filename)
+    mime_type = guessed_type if guessed_type and guessed_type.startswith("image/") else "image/jpeg"
+
+    analysis = gemini_service.analyze_image(content, mime_type)
 
     project.problem_image_url = f"/static/uploads/{filename}"
     project.problem_image_analysis_json = json.dumps(analysis)
