@@ -278,3 +278,46 @@ def suggest_modules(problem_description: str) -> List[Dict[str, Any]]:
         {"title": "Dampak Sampah terhadap Ekosistem", "type": "dokumen", "reason": "Memberi konteks urgensi masalah lingkungan"},
         {"title": "Prinsip 3R (Reduce, Reuse, Recycle)", "type": "artikel", "reason": "Kerangka solusi yang bisa diterapkan siswa"},
     ]
+
+
+# ---------------------------------------------------------------------------
+# 6. Trigger Questions (Pertanyaan Pemantik) dari Problem + Image Analysis
+# ---------------------------------------------------------------------------
+def generate_trigger_questions(
+    problem_description: str, image_analysis: Optional[Dict[str, Any]] = None
+) -> List[str]:
+    analysis_text = ""
+    if image_analysis and image_analysis.get("objects"):
+        objects_summary = ", ".join(
+            f"{obj['label']} ({obj['count']}x)" for obj in image_analysis["objects"]
+        )
+        analysis_text = f"Hasil deteksi objek pada foto: {objects_summary}. Total objek: {image_analysis.get('total_count', 0)}."
+
+    prompt = (
+        "Kamu adalah AI teman diskusi bergaya Socratic method untuk siswa SMA yang sedang "
+        "menyelesaikan studi kasus PBL/PjBL.\n\n"
+        f"Deskripsi masalah: {problem_description}\n"
+        f"{analysis_text}\n\n"
+        "Buatkan TEPAT 3 pertanyaan pemantik (trigger questions) untuk merangsang critical "
+        "thinking siswa terhadap masalah ini. Pertanyaan harus:\n"
+        "- Membuat siswa berpikir tentang AKAR PENYEBAB masalah (bukan solusi langsung)\n"
+        "- Relevan dengan bidang keilmuan yang sesuai konteks (biologi, kimia, fisika, dll)\n"
+        "- Singkat dan jelas, 1 kalimat per pertanyaan\n\n"
+        "Kembalikan HANYA JSON array berisi 3 string, contoh:\n"
+        '["Alasan biologis apa yang membuat tembok itu berjamur?", "...", "..."]'
+    )
+
+    if _gemini_ready:
+        try:
+            text = _call_gemini_text(prompt)
+            result = _extract_json(text)
+            if isinstance(result, list) and len(result) >= 3:
+                return result[:3]
+        except Exception:
+            pass
+
+    return [
+        "Apa yang menyebabkan masalah ini bisa terjadi di lokasi tersebut?",
+        "Faktor lingkungan apa yang paling berpengaruh terhadap kondisi ini?",
+        "Bagaimana kondisi ini bisa berubah seiring waktu jika dibiarkan?",
+    ]

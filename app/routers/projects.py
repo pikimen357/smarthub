@@ -239,3 +239,23 @@ def start_project(
     db.commit()
 
     return group
+
+@router.get("/projects/{project_id}/trigger-questions", response_model=schemas.TriggerQuestionsOut)
+def get_trigger_questions(
+    project_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    project = db.query(models.Project).filter(models.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project tidak ditemukan")
+
+    image_analysis = None
+    if project.problem_image_analysis_json:
+        image_analysis = json.loads(project.problem_image_analysis_json)
+
+    questions = gemini_service.generate_trigger_questions(
+        problem_description=project.description or "",
+        image_analysis=image_analysis,
+    )
+    return {"questions": questions}

@@ -267,3 +267,7 @@ class QuestOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+# ---------- Trigger Questions ----------
+class TriggerQuestionsOut(BaseModel):
+    questions: List[str]
