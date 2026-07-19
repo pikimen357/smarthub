@@ -208,11 +208,10 @@ class Submission(Base):
     group = relationship("Group", back_populates="submission")
 
 class ImageGenerationLog(Base):
-    """Mencatat berapa kali gambar sudah digenerate per Group, untuk rate limiting."""
     __tablename__ = "image_generation_logs"
 
     id = Column(String, primary_key=True, default=gen_id)
     group_id = Column(String, ForeignKey("groups.id"), nullable=False)
-    task_id = Column(String, ForeignKey("tasks.id"), nullable=True)
+    task_id = Column(String, ForeignKey("tasks.id", ondelete="SET NULL"), nullable=True)  # <-- tambah ondelete
     image_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
